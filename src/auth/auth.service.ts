@@ -1,9 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { SignUpDto } from './dto/sign_up.dto';
 import { SignInDto } from './dto/sign_in.dto';
+import { User } from './schema/user.schema';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class AuthService {
+    // constructor(@Injectable(User.name) private userModel : Model<User>) {}
+
+
     handleSignIn(signInData: SignInDto):object {
         const { username, password } = signInData
         console.log(signInData)
