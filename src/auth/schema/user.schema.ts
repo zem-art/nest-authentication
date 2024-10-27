@@ -45,6 +45,15 @@ export class User {
   
   @Prop({ required: true })
   address: string;
+
+  /**
+   * @param password 
+   * @returns 
+   * This function is an async method, which means it will return a Promise.
+   */
+  async isValidPassword(password: string): Promise<boolean> {
+    return bcrypt.compare(password, this.password);
+  }
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
@@ -74,10 +83,11 @@ UserSchema.pre('save', async function (next) {
   }
 })
 
-UserSchema.methods.isValidPassword = async function (password) {
-  try {
-    return await bcrypt.compare(password, this.password)
-  } catch (error) {
-    throw error
-  }
-}
+/**
+ * @param password 
+ * @returns 
+ * This function is an async method, which means it will return a Promise.
+ */
+UserSchema.methods.isValidPassword = async function (password: string): Promise<boolean> {
+  return bcrypt.compare(password, this.password);
+};

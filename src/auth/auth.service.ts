@@ -10,15 +10,31 @@ import { RandomStrUtil } from 'src/common/utils/random_str.utils';
 
 @Injectable()
 export class AuthService {
+    /**
+     * 
+     * @param userModel Schema Users
+     * @param jwtService JWTservice: configuration JWT
+     */
     constructor(
         @InjectModel(User.name) private userModel : Model<User>,
         private jwtService: JWTService
     ) {}
 
+    /**
+     * 
+     * @param userId id_user
+     * @param param object data
+     * @returns 
+     */
     async generateToken(userId: string, param:string) {
         return this.jwtService.signJwtToken(userId, param);
     }
 
+    /**
+     * 
+     * @param signInData DTO sign in
+     * @returns 
+     */
     async handleSignIn(signInData: SignInDto) {
         try {
             const { username_or_email, password } = signInData
@@ -31,6 +47,16 @@ export class AuthService {
                     status : HttpStatus.NOT_FOUND,
                     message : 'Sorry user not found or recognize',
                 }, HttpStatus.NOT_FOUND)
+            }
+
+            const isMatchPassword = await findUser.isValidPassword(password)
+            console.log(isMatchPassword);
+            if(!isMatchPassword) {
+                throw new HttpException({
+                    title : 'failed',
+                    status : HttpStatus.BAD_REQUEST,
+                    message : 'Sorry the password is not the same or wrong',
+                }, HttpStatus.BAD_REQUEST)
             }
 
             const token_jwt = await this.generateToken(findUser.id_user, JSON.stringify({
@@ -58,10 +84,15 @@ export class AuthService {
             }
         } catch (error) {
             if (error instanceof HttpException) throw error;
-            throw new InternalServerErrorException();
+            throw new InternalServerErrorException(error.message);
         }
     }
 
+    /**
+     * 
+     * @param signUpData DTO sign up
+     * @returns 
+     */
     async handleSignUp(signUpData: SignUpDto) {
         try {
             const { username, email, password, confirm_password, address, date_of_birth, no_phone } = signUpData
@@ -107,7 +138,7 @@ export class AuthService {
             }
         } catch (error) {
             if (error instanceof HttpException) throw error;
-            throw new InternalServerErrorException();
+            throw new InternalServerErrorException(error.message);
         }
     }
 }

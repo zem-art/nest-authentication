@@ -4,13 +4,19 @@ import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
 import { InternalServerErrorException } from '@nestjs/common';
 
-@Injectable()  // Tambahkan decorator Injectable
+@Injectable()
 export class JWTService {
     constructor(
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService
     ) {}
 
+    /**
+     * 
+     * @param id user_id data
+     * @param data json stringfy data
+     * @returns 
+     */
     async signJwtToken(id: string, data: string): Promise<string> {
         try {
             const payload = {
