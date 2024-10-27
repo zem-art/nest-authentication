@@ -22,25 +22,39 @@ export class AuthService {
     async handleSignIn(signInData: SignInDto) {
         try {
             const { username_or_email, password } = signInData
+            let response = {}
             
             const findUser = await this.userModel.findOne({ $or : [{ username : username_or_email}, { email : username_or_email} ]});
-            if(!findUser) throw new HttpException({
+            if(!findUser) {
+                throw new HttpException({
                     title : 'failed',
                     status : HttpStatus.NOT_FOUND,
                     message : 'Sorry user not found or recognize',
                 }, HttpStatus.NOT_FOUND)
-
-            const data = {
-                name : 'ucups',
-                date : 123,
             }
-            const token_jwt = await this.generateToken('daddef', JSON.stringify(data))
-            console.log(token_jwt);
+
+            const token_jwt = await this.generateToken(findUser.id_user, JSON.stringify({
+                username: findUser.username,
+                date: findUser.date_of_birth
+            }));
+            
+            response = {
+                data : {
+                    id_user: findUser.id_user,
+                    username: findUser.username,
+                    email: findUser.email,
+                    no_phone: findUser.no_phone,
+                    date_of_birth: findUser.date_of_birth,
+                    address: findUser.address,
+                },
+                token : token_jwt,
+            }
 
             return { 
                 status: 'succeed',
                 status_code : 200,
-                message : 'Congratulations, you have successfully logged in.'
+                message : 'Congratulations, you have successfully logged in.',
+                response,
             }
         } catch (error) {
             if (error instanceof HttpException) throw error;
