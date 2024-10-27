@@ -3,7 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schema/user.schema';
-import { JWTService } from 'src/common/middlewares/jtw-helper.middleware';
+import { JWTServiceMiddleware } from 'src/common/middlewares/jtw-helper.middleware';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
@@ -28,7 +28,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     })
   ],
   controllers: [AuthController],
-  providers: [JWTService, AuthService],
-  exports : [JWTService]
+  providers: [JWTServiceMiddleware, AuthService],
+  exports : [JWTServiceMiddleware]
 })
 export class AuthModule {}

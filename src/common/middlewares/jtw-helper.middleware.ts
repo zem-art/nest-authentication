@@ -1,15 +1,57 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
 import { InternalServerErrorException } from '@nestjs/common';
 
 @Injectable()
-export class JWTService {
+export class JWTServiceMiddleware {
     constructor(
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService
     ) {}
+
+    /**
+     * 
+     * @param token decode token
+     * @returns 
+     */
+    decodeTokenJwt(token: string): any {
+        return this.jwtService.decode(token);
+    }
+
+    /**
+     * 
+     * @param headers header from request
+     * @returns 
+     */
+    async verifyJwtToken(headers : Record<string, string>): Promise<any> {
+        try {
+            if(!headers['authorization']) {
+                throw new HttpException({
+                    title : 'failed',
+                    status : HttpStatus.UNAUTHORIZED,
+                    message : 'authentication token is invalid or has expired.'
+                }, HttpStatus.UNAUTHORIZED);
+            }
+
+            const authHeader = headers['authorization']
+            const bearerToken = authHeader.split(' ')
+            const token = bearerToken[1]
+            const secret = this.configService.get<string>('jwt.secret');
+            
+            return await this.jwtService.verify(token, {
+                ignoreExpiration : false,
+                secret,
+            })
+        } catch (error) {
+            // console.error('JWT verify error:', error);
+            if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+                throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+            }
+            throw new InternalServerErrorException('Failed to sign JWT token');
+        }
+    }
 
     /**
      * 
@@ -46,4 +88,5 @@ export class JWTService {
             throw new InternalServerErrorException('Failed to sign JWT token');
         }
     }
+
 }

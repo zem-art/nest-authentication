@@ -4,7 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { SignUpDto } from './dto/sign_up.dto';
 import { SignInDto } from './dto/sign_in.dto';
 import { User } from './schema/user.schema';
-import { JWTService } from 'src/common/middlewares/jtw-helper.middleware';
+import { JWTServiceMiddleware } from 'src/common/middlewares/jtw-helper.middleware';
 import { StringUtil } from 'src/common/utils/string.util';
 import { RandomStrUtil } from 'src/common/utils/random_str.utils';
 
@@ -13,11 +13,11 @@ export class AuthService {
     /**
      * 
      * @param userModel Schema Users
-     * @param jwtService JWTservice: configuration JWT
+     * @param JWTServiceMiddleware JWTServiceMiddleware: configuration JWT
      */
     constructor(
         @InjectModel(User.name) private userModel : Model<User>,
-        private jwtService: JWTService
+        private jwtService: JWTServiceMiddleware,
     ) {}
 
     /**
@@ -45,7 +45,7 @@ export class AuthService {
                 throw new HttpException({
                     title : 'failed',
                     status : HttpStatus.NOT_FOUND,
-                    message : 'Sorry user not found or recognize',
+                    message : 'sorry user not found or recognize',
                 }, HttpStatus.NOT_FOUND)
             }
 
@@ -55,7 +55,7 @@ export class AuthService {
                 throw new HttpException({
                     title : 'failed',
                     status : HttpStatus.BAD_REQUEST,
-                    message : 'Sorry the password is not the same or wrong',
+                    message : 'sorry the password is not the same or wrong',
                 }, HttpStatus.BAD_REQUEST)
             }
 
@@ -79,7 +79,7 @@ export class AuthService {
             return { 
                 status: 'succeed',
                 status_code : 200,
-                message : 'Congratulations, you have successfully logged in.',
+                message : 'congratulations, you have successfully logged in.',
                 response,
             }
         } catch (error) {
@@ -101,7 +101,7 @@ export class AuthService {
                 throw new HttpException({
                     title : 'failed',
                     status : HttpStatus.BAD_REQUEST,
-                    message : 'Sorry, password and password confirmation are not the same.'
+                    message : 'sorry, password and password confirmation are not the same.'
                 }, HttpStatus.BAD_REQUEST);
             }
 
@@ -118,7 +118,7 @@ export class AuthService {
                 throw new HttpException({
                     title : 'failed',
                     status : HttpStatus.CONFLICT,
-                    message : 'Email already registered.'
+                    message : 'email already registered.'
                 }, HttpStatus.CONFLICT);
             }
 
@@ -134,7 +134,37 @@ export class AuthService {
             return {
                 title: 'succeed',
                 status_code : 200,
-                message : 'Congratulations, you have successfully sign up.'
+                message : 'congratulations, you have successfully sign up.'
+            }
+        } catch (error) {
+            if (error instanceof HttpException) throw error;
+            throw new InternalServerErrorException(error.message);
+        }
+    }
+
+    async handleProfile(headers : Record<string, string>) {
+        try {
+            let response = {}
+            // Verify the JWT token first
+            await this.jwtService.verifyJwtToken(headers)
+
+            const authHeader = headers['authorization']
+            if (!authHeader) { 
+                throw new HttpException({
+                    title: 'failed',
+                    status: HttpStatus.UNAUTHORIZED,
+                    message: 'Authentication token is invalid or has expired.',
+                },HttpStatus.UNAUTHORIZED );
+            }
+            const bearerToken = authHeader.split(' ')
+            const token = bearerToken[1]
+            const decodedToken = this.jwtService.decodeTokenJwt(token)
+
+            return {
+                title: 'succeed',
+                status_code : 200,
+                message : 'successfully retrieve user profile.',
+                response
             }
         } catch (error) {
             if (error instanceof HttpException) throw error;

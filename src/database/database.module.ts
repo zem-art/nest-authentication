@@ -9,7 +9,7 @@ import { MongooseModule } from '@nestjs/mongoose';
             const dbUrl = configService.get<string>('database.url');
             const dbPort = configService.get<string>('database.port');
             const dbUser = configService.get<string>('database.user');
-            const dbPassword = configService.get<string>('database.password');
+            const dbPassword = configService.get<string>('database.pass');
             const dbDirect = configService.get<string>('database.direct');
             const dbAuth = configService.get<string>('database.auth');
             const dbName = configService.get<string>('database.name');
@@ -24,7 +24,7 @@ import { MongooseModule } from '@nestjs/mongoose';
             const urlName = dbUser && dbPassword
                 ? `mongodb://${dbUser}:${dbPassword}@${dbUrl}:${dbPort}/${dbName}?${authParams}`
                 : `mongodb://${dbUrl}:${dbPort}/${dbName}`;
-
+            // console.log(urlName);
             return {
                 uri : urlName,
                 autoCreate: true,
