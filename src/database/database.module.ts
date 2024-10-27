@@ -10,14 +10,14 @@ import { MongooseModule } from '@nestjs/mongoose';
             const dbPort = configService.get<string>('database.port');
             const dbUser = configService.get<string>('database.user');
             const dbPassword = configService.get<string>('database.password');
-            const dbName = 'nest-test'
+            const dbDirect = configService.get<string>('database.direct');
+            const dbAuth = configService.get<string>('database.auth');
+            const dbName = configService.get<string>('database.name');
 
             // Add query parameter for authentication
             const authParams = new URLSearchParams({
-                directConnection: 'true', // Force direct connection to MongoDB server without trying to find replica set
-                appName: 'nest-authentication',  // Replace with your application name
-                authMechanism: 'DEFAULT',
-                authSource : 'admin'
+                directConnection: dbDirect, // Force direct connection to MongoDB server without trying to find replica set
+                authSource : dbAuth,
             }).toString();
 
             // Format URL with credentials if any

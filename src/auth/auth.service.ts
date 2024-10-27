@@ -1,21 +1,41 @@
+import { Model } from 'mongoose';
 import { Injectable, HttpStatus, HttpException, InternalServerErrorException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { SignUpDto } from './dto/sign_up.dto';
 import { SignInDto } from './dto/sign_in.dto';
 import { User } from './schema/user.schema';
-import { Model } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
+import { JWTService } from 'src/common/middlewares/jtw-helper.middleware';
 import { StringUtil } from 'src/common/utils/string.util';
+import { RandomStrUtil } from 'src/common/utils/random_str.utils';
 
 @Injectable()
 export class AuthService {
-    constructor(@InjectModel(User.name) private userModel : Model<User>) {}
+    constructor(
+        @InjectModel(User.name) private userModel : Model<User>,
+        private jwtService: JWTService
+    ) {}
+
+    async generateToken(userId: string, param:string) {
+        return this.jwtService.signJwtToken(userId, param);
+    }
 
     async handleSignIn(signInData: SignInDto) {
         try {
             const { username_or_email, password } = signInData
             
             const findUser = await this.userModel.findOne({ $or : [{ username : username_or_email}, { email : username_or_email} ]});
-            console.log(findUser);
+            if(!findUser) throw new HttpException({
+                    title : 'failed',
+                    status : HttpStatus.NOT_FOUND,
+                    message : 'Sorry user not found or recognize',
+                }, HttpStatus.NOT_FOUND)
+
+            const data = {
+                name : 'ucups',
+                date : 123,
+            }
+            const token_jwt = await this.generateToken('daddef', JSON.stringify(data))
+            console.log(token_jwt);
 
             return { 
                 status: 'succeed',
@@ -57,8 +77,9 @@ export class AuthService {
                 }, HttpStatus.CONFLICT);
             }
 
-            const newUser = new this.userModel({
+            let newUser = new this.userModel({
                 ...signUpData,
+                id_user : RandomStrUtil.random_str_number(7),
                 no_phone : StringUtil.remove_special_phone_number(no_phone)
             });
 

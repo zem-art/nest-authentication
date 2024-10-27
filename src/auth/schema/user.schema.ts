@@ -4,8 +4,27 @@ import * as bcrypt from "bcrypt";
 
 export type UserDocument = HydratedDocument<User>;
 
-@Schema({ strict : true })
+/**
+ * NOTE :
+ * schema.collection
+ * 1. Opsional, defaultnya plural dari nama class
+ * 2. Custom collection name di MongoDB
+ */
+@Schema({ 
+  strict : true,
+  timestamps : {
+    createdAt : 'created_at',
+    updatedAt : 'updated_at',
+  },
+  // collection : 'admin' // catatan di atas
+})
 export class User {
+  @Prop()
+  id_docs: string;
+
+  @Prop({ required: true, unique: true })
+  id_user: string;
+
   @Prop({ required: true, unique: true })
   username: string;
 
@@ -47,6 +66,7 @@ UserSchema.pre('save', async function (next) {
     const salt = await bcrypt.genSalt(10)
     const hashedPassword = await bcrypt.hash(this.password, salt)
     this.password = hashedPassword
+    this.id_docs = String(this._id)
 
     next()
   } catch (error) {

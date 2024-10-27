@@ -5,4 +5,7 @@ export default registerAs('database', () => ({
     port : process.env.DATABASE_PORT,
     user : process.env.DATABASE_USER,
     password : process.env.DATABASE_PASSWORD,
+    name : process.env.DATABASE_NAME || 'db-nest-js',
+    direct : process.env.DATABASE_DIRECT,
+    auth : process.env.DATABASE_AUTH,
 }))

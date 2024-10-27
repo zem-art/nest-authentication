@@ -1,36 +1,43 @@
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { createHash } from 'crypto'; // Jika menggunakan 'crypto' untuk hashing
+import { createHash } from 'crypto';
 import { InternalServerErrorException } from '@nestjs/common';
 
-export class AuthService {
-    static jwtService: any;
+@Injectable()  // Tambahkan decorator Injectable
+export class JWTService {
     constructor(
-        private readonly configService: ConfigService,
-        private readonly jwtService: JwtService
+        private readonly jwtService: JwtService,
+        private readonly configService: ConfigService
     ) {}
 
-    static async sign_jwt_token(id: string, data: string, configService: ConfigService): Promise<string> {
+    async signJwtToken(id: string, data: string): Promise<string> {
         try {
-            const payload = { hash: createHash('sha256').update(data).digest('hex') };
-            const secret = configService.get<string>('jwt.secret');
+            const payload = {
+                hash: createHash('sha256').update(data).digest('hex')
+            };
+
+            const secret = this.configService.get<string>('jwt.secret');
+            const expiresIn = this.configService.get<string>('jwt.expiresIn')
+            const issuer = this.configService.get<string>('jwt.issuer')
+
+            if (!secret) throw new InternalServerErrorException('JWT secret not configured');
+
             const options = {
-                expiresIn: '1m',
-                issuer: 'boba.com',
+                expiresIn,
+                issuer,
                 audience: id,
             };
 
-            return new Promise((resolve, reject) => {
-                this.jwtService.sign(payload, secret, options, (err, token) => {
-                    if (err) {
-                        console.error(err.message);
-                        reject(new InternalServerErrorException('Failed to sign JWT token'));
-                    }
-                    resolve(token);
-                });
+            // Use Promise with async/await
+            return await this.jwtService.signAsync(payload, {
+                secret: secret,
+                ...options
             });
+
         } catch (error) {
-            throw new InternalServerErrorException('Unexpected error during JWT signing');
+            console.error('JWT signing error:', error);
+            throw new InternalServerErrorException('Failed to sign JWT token');
         }
     }
 }

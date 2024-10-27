@@ -15,5 +15,4 @@ export class StringUtil {
         // Menggunakan metode test() untuk mengecek apakah simbol ditemukan dalam string
         return regex.test(params);
     }
-    
 }
