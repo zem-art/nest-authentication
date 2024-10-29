@@ -8,6 +8,7 @@ export const connectToDatabase = async (configService: ConfigService) => {
     const dbPassword = configService.get<string>('database.password');
     const dbDirect = configService.get<string>('database.direct');
     const dbAuth = configService.get<string>('database.auth');
+    const dbName = configService.get<string>('database.name');
 
     // Add query parameter for authentication
     const authParams = new URLSearchParams({
@@ -21,7 +22,7 @@ export const connectToDatabase = async (configService: ConfigService) => {
       : `mongodb://${dbUrl}:${dbPort}`;
 
     const config = {
-      dbName: 'nest-test',
+      dbName : dbName,
       autoIndex: true,
       autoCreate : true,
       serverSelectionTimeoutMS : 5000,

@@ -7,6 +7,8 @@ import { User } from './schema/user.schema';
 import { JWTServiceMiddleware } from 'src/common/middlewares/jtw-helper.middleware';
 import { StringUtil } from 'src/common/utils/string.util';
 import { RandomStrUtil } from 'src/common/utils/random_str.utils';
+import { throwHttpException } from 'src/common/helpers/exceptions/http-exception.util';
+import { AgeUtil } from 'src/common/utils/age.util';
 
 @Injectable()
 export class AuthService {
@@ -41,23 +43,11 @@ export class AuthService {
             let response = {}
             
             const findUser = await this.userModel.findOne({ $or : [{ username : username_or_email}, { email : username_or_email} ]});
-            if(!findUser) {
-                throw new HttpException({
-                    title : 'failed',
-                    status : HttpStatus.NOT_FOUND,
-                    message : 'sorry user not found or recognize',
-                }, HttpStatus.NOT_FOUND)
-            }
+            if(!findUser) return throwHttpException('failed', 'sorry user not found or recognize.', HttpStatus.NOT_FOUND)
+                
 
             const isMatchPassword = await findUser.isValidPassword(password)
-            console.log(isMatchPassword);
-            if(!isMatchPassword) {
-                throw new HttpException({
-                    title : 'failed',
-                    status : HttpStatus.BAD_REQUEST,
-                    message : 'sorry the password is not the same or wrong',
-                }, HttpStatus.BAD_REQUEST)
-            }
+            if(!isMatchPassword) return throwHttpException('failed', 'sorry the password is not the same or wrong.', HttpStatus.BAD_REQUEST)
 
             const token_jwt = await this.generateToken(findUser.id_user, JSON.stringify({
                 username: findUser.username,
@@ -97,30 +87,12 @@ export class AuthService {
         try {
             const { username, email, password, confirm_password, address, date_of_birth, no_phone } = signUpData
 
-            if(password !== confirm_password) {
-                throw new HttpException({
-                    title : 'failed',
-                    status : HttpStatus.BAD_REQUEST,
-                    message : 'sorry, password and password confirmation are not the same.'
-                }, HttpStatus.BAD_REQUEST);
-            }
+            if(password !== confirm_password) return throwHttpException('failed', 'sorry, password and password confirmation are not the same.', HttpStatus.BAD_REQUEST)
 
-            if(StringUtil.special_character_username(username)){
-                throw new HttpException({
-                    title : 'failed',
-                    status : HttpStatus.BAD_REQUEST,
-                    message : 'sorry username cannot contain special characters.'
-                }, HttpStatus.BAD_REQUEST);
-            }
+            if(StringUtil.special_character_username(username)) return throwHttpException('failed', 'sorry username cannot contain special characters.', HttpStatus.BAD_REQUEST)
 
             const existingUser = await this.userModel.findOne({ email: email });
-            if(existingUser){
-                throw new HttpException({
-                    title : 'failed',
-                    status : HttpStatus.CONFLICT,
-                    message : 'email already registered.'
-                }, HttpStatus.CONFLICT);
-            }
+            if(existingUser) return throwHttpException('failed', 'email already registered', HttpStatus.CONFLICT)
 
             let newUser = new this.userModel({
                 ...signUpData,
@@ -142,6 +114,11 @@ export class AuthService {
         }
     }
 
+    /**
+     * 
+     * @param headers request headers
+     * @returns 
+     */
     async handleProfile(headers : Record<string, string>) {
         try {
             let response = {}
@@ -149,16 +126,26 @@ export class AuthService {
             await this.jwtService.verifyJwtToken(headers)
 
             const authHeader = headers['authorization']
-            if (!authHeader) { 
-                throw new HttpException({
-                    title: 'failed',
-                    status: HttpStatus.UNAUTHORIZED,
-                    message: 'Authentication token is invalid or has expired.',
-                },HttpStatus.UNAUTHORIZED );
-            }
+            if (!authHeader) return throwHttpException('failed', 'authentication token is invalid or has expired.', HttpStatus.UNAUTHORIZED)
             const bearerToken = authHeader.split(' ')
             const token = bearerToken[1]
             const decodedToken = this.jwtService.decodeTokenJwt(token)
+
+            const findUser = await this.userModel.findOne({ id_user : decodedToken.aud })
+            if(!findUser) return throwHttpException('failed', 'sorry user not found.', HttpStatus.NOT_FOUND)
+            
+            response = {
+                data : {
+                    id_user : findUser.id_user,
+                    username : findUser.username,
+                    email : findUser.email,
+                    no_phone : findUser.no_phone,
+                    date_of_birth : findUser.date_of_birth,
+                    age : AgeUtil.calculate_age(findUser.date_of_birth),
+                    address : findUser.address,
+                },
+                token,
+            }
 
             return {
                 title: 'succeed',
