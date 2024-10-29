@@ -1,8 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
 import { InternalServerErrorException } from '@nestjs/common';
+import { throwHttpException } from '../helpers/exceptions/http-exception.util';
 
 @Injectable()
 export class JWTServiceMiddleware {
@@ -27,13 +28,7 @@ export class JWTServiceMiddleware {
      */
     async verifyJwtToken(headers : Record<string, string>): Promise<any> {
         try {
-            if(!headers['authorization']) {
-                throw new HttpException({
-                    title : 'failed',
-                    status : HttpStatus.UNAUTHORIZED,
-                    message : 'authentication token is invalid or has expired.'
-                }, HttpStatus.UNAUTHORIZED);
-            }
+            if(!headers['authorization']) return throwHttpException('failed', 'authentication token is invalid or has expired.', HttpStatus.UNAUTHORIZED)
 
             const authHeader = headers['authorization']
             const bearerToken = authHeader.split(' ')
@@ -46,10 +41,10 @@ export class JWTServiceMiddleware {
             })
         } catch (error) {
             // console.error('JWT verify error:', error);
-            if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-                throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+            if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError' || error.name == 'HttpException') {
+                return throwHttpException('failed', 'authentication token is invalid or has expired.', HttpStatus.UNAUTHORIZED)
             }
-            throw new InternalServerErrorException('Failed to sign JWT token');
+            return throwHttpException('failed', 'Failed to sign JWT token.', HttpStatus.INTERNAL_SERVER_ERROR)
         }
     }
 
